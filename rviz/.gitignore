@@ -1,0 +1,4 @@
+# Ignore auto_generated files...
+env_*
+# Except this file
+!.gitignore

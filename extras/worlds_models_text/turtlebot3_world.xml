@@ -1,0 +1,9 @@
+
+    <model name="env_1_turtlebot3_world">
+      <static>true</static>
+      <include>
+        <uri>model://turtlebot3_world</uri>
+      </include>
+      <pose frame="">20.0 0.0 0.0 0.0 0.0 0.0</pose>
+    </model>
+
