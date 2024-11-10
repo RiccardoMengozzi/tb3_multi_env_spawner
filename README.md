@@ -1,6 +1,6 @@
 # `tb3_multi_env_spawner`
 
-The `tb3_multi_env_spawner` package is designed to streamline multi-environment reinforcement learning (RL) training. It enables the spawning of multiple custom environments, each containing a TurtleBot3 robot. Additionally, a separate Cartographer instance can be created for each robot (if needed).
+The `tb3_multi_env_spawner` package is designed to help multi-environment reinforcement learning (RL) training. It enables the spawning of multiple custom environments, each containing a TurtleBot3 robot. Additionally, a Cartographer instance can be created for each robot (if needed).
 
 ## Table of Contents
 - [Preview](#preview)
