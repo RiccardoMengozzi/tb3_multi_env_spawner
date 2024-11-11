@@ -2,8 +2,12 @@
 
 The `tb3_multi_env_spawner` package is designed to help multi-environment reinforcement learning (RL) training. It enables the spawning of multiple custom environments, each containing a TurtleBot3 robot. Additionally, a Cartographer instance can be created for each robot (if needed).
 
+>[!NOTE]
+>Package has been tested on Ubuntu 22.02 | ROS2 Humble. 
+
 ## Table of Contents
 - [Preview](#preview)
+- [Installation](#installation)
 - [Usage](#usage)
 - [Parameters](#parameters)
 - [Environment Modes](#environment-modes)
@@ -16,8 +20,75 @@ The `tb3_multi_env_spawner` package is designed to help multi-environment reinfo
 
 ---
 
+
+
+## Installation
+> [!IMPORTANT]
+> The package depends on the [turtlebot3_simulations](https://github.com/ROBOTIS-GIT/turtlebot3_simulations) package, to install it:
+
+First install turtlebot3 dependencies:
+```
+apt-get update \
+    && apt-get install -y \
+    ros-humble-gazebo-* \
+    ros-humble-cartographer \
+    ros-humble-cartographer-ros \
+    ros-humble-dynamixel-sdk \
+    ros-humble-turtlebot3-msgs \
+    ros-humble-turtlebot3 \
+    && rm -rf /var/lib/apt/lists/*
+```
+
+Then clone the turtlebot3_simulations repository in `<path-to-your-workspace>/src`:
+
+```
+git clone -b humble-devel https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
+```
+
+Finally, in `<path-to_your_workspace>` (make sure to replace `<ros-distro>`):
+```
+rosdep install -i --from-path src --rosdistro <ros-distro> -y
+colcon build --symlink-install
+```
+
+> [!IMPORTANT]
+> To use the `hospital.world` these requirements are needed:
+```
+docopt>=0.6.2
+requests
+lxml
+```
+create a `requirements.txt` file with those requirements and run:
+
+```
+python3 -m pip install -r requirements.txt
+```
+
+> [!IMPORTANT]
+> Also, to use the `hospital.world`, `small_warehouse.world`, `small_house.world`, you need to install aws and fuel models.
+
+To install them:
+```
+ python3 fuel_utility.py download \
+ -m XRayMachine -m IVStand -m BloodPressureMonitor -m BPCart -m BMWCart \
+ -m CGMClassic -m StorageRack -m Chair \
+ -m InstrumentCart1 -m Scrubs -m PatientWheelChair \
+ -m WhiteChipChair -m TrolleyBed -m SurgicalTrolley \
+ -m PotatoChipChair -m VisitorKidSit -m FemaleVisitorSit \
+ -m AdjTable -m MopCart3 -m MaleVisitorSit -m Drawer \
+ -m OfficeChairBlack -m ElderLadyPatient -m ElderMalePatient \
+ -m InstrumentCart2 -m MetalCabinet -m BedTable -m BedsideTable \
+ -m AnesthesiaMachine -m TrolleyBedPatient -m Shower \
+ -m SurgicalTrolleyMed -m StorageRackCovered -m KitchenSink \
+ -m Toilet -m VendingMachine -m ParkingTrolleyMin -m PatientFSit \
+ -m MaleVisitorOnPhone -m FemaleVisitor -m MalePatientBed \
+ -m StorageRackCoverOpen -m ParkingTrolleyMax \
+ -d fuel_models --verbose
+```
+
 ## Usage
-All parameters can be configured in `/config/launch_params.yaml` (see the [Parameters](#parameters) section below for details).
+>[!TIP]
+>All parameters can be configured in `/config/launch_params.yaml` (see the [Parameters](#parameters) section below for details).
 
 To launch the package, set the TurtleBot3 model in your terminal:
 
@@ -47,10 +118,13 @@ ros2 launch tb3_multi_env_spawner tb3_multi_env_spawner.launch.py
 | `robot.pose.y`           | `0.0`              | Initial y-coordinate of the robot when `random_pose` is `False`.                                          |
 | `robot.pose.yaw`         | `0.0`              | Initial orientation (yaw) of the robot when `random_pose` is `False`.                                     |
 
+>[!WARNING]
+>`.world` files like `hospital.world` can take minutes to load in gazebo, have patience!!
+
 
 ## Environment Modes
-
-The `env.mode` parameter supports three different modes for environment setup:
+>[!TIP]
+>The `env.mode` parameter supports three different modes for environment setup:
 
 1. **`single_model`**:
    - Loads a single environment model for all simulation instances.
