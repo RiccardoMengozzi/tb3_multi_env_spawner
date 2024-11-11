@@ -1,11 +1,11 @@
-
- <model name="env_3_AirconditionerA_01_001">
+<model name="env_3_AirconditionerA_01_001">
         <static>true</static>
         <include>
             <uri>model://aws_robomaker_residential_AirconditionerA_01</uri>
         </include>
         <pose frame="">-9.19941 23.41123 2.084544 0.0 -0.0 0.0</pose>
 	</model>
+	
 	<model name="env_3_AirconditionerB_01_001">
         <static>true</static>    
         <include>
@@ -20,6 +20,11 @@
         </include>
         <pose frame="">3.295503 25.225673999999998 0.318684 0.0 -0.0 0.0</pose>
 	</model>
+    
+    
+    
+
+    
   <model name="env_3_Ball_01_003">
         <static>true</static>      
         <include>
@@ -55,6 +60,9 @@
         </include>
         <pose frame="">2.779073 15.607296999999999 1.538173 0.0 -0.0 0.0</pose>
 	</model>
+	
+    
+	
 	<model name="env_3_ChairA_01_001">
         <static>true</static>    
         <include>
@@ -174,6 +182,7 @@
         <pose frame="">9.038383 17.64886 0.90361 0.0 -0.0 3.137133</pose>
         <static> true </static>
 	</model>
+
 	<model name="env_3_Curtain_01_001">
         <static>true</static>    
         <include>
@@ -181,6 +190,7 @@
         </include>
         <pose frame="">-9.172642 21.20376 0.0 0.0 -0.0 0.0</pose>
 	</model>
+    
 	<model name="env_3_KitchenTable_01_001">
         <static>true</static>    
         <include>
@@ -202,6 +212,7 @@
         </include>
         <pose frame="">-0.55624 25.111241 0.0 0.0 -0.0 0.0</pose>
 	</model>
+
 	<model name="env_3_Door_01_001">
         <static>true</static>    
         <include>
@@ -209,6 +220,7 @@
         </include>
         <pose frame="">6.001449 15.450998 0.0 0.0 -0.0 0.0</pose>
 	</model>
+	
 	<model name="env_3_Dumbbell_01_001">
         <static>true</static>    
         <include>
@@ -251,6 +263,7 @@
         </include>
         <pose frame="">5.724 15.477 0.9938 0.0 -0.0 -3.1415</pose>
 	</model>
+	
     <model name="env_3_HouseWallB_01_001">
         <static>true</static>    
         <include>
@@ -258,6 +271,7 @@
         </include>
         <pose frame="">0.0 21.0 0.0 0.0 -0.0 0.0</pose>
 	</model>
+    
     <model name="env_3_FloorB_01_001">
         <static>true</static>    
         <include>
@@ -265,6 +279,8 @@
         </include>
         <pose frame="">0.0 21.0 0.0 0.0 -0.0 0.0</pose>
 	</model>
+
+
     <model name="env_3_FoldingDoor_02_001">
         <static>true</static>    
         <include>
@@ -272,6 +288,7 @@
         </include>
         <pose frame="">4.674231 23.46451 0.0 0.0 -0.0 3.14159</pose>
 	</model>
+
     <model name="env_3_FoldingDoor_02_002">
         <static>true</static>    
         <include>
@@ -279,6 +296,7 @@
         </include>
         <pose frame="">4.8912 16.15032 0.0 0.0 -0.0 0.0</pose>
 	</model>
+
 	<model name="env_3_KitchenCabinet_01_001">
         <static>true</static>    
         <include>
@@ -293,6 +311,7 @@
         </include>
         <pose frame="">9.285478 15.978739000000001 1.141805 0.0 -0.0 0.0</pose>
 	</model>
+	
 	<model name="env_3_LightC_01_001">
         <static>true</static>    
         <include>
@@ -307,6 +326,9 @@
         </include>
         <pose frame="">-0.138245 15.555629 2.0 0.0 -0.0 0.0</pose>
 	</model>
+	
+    
+     
 	<model name="env_3_PortraitA_01">
         <static>true</static>    
         <include>
@@ -314,6 +336,7 @@
         </include>
         <pose frame="">-2.71236 16.182461 1.0 0.0 -0.0 1.566796</pose>
 	</model>
+	
 	<model name="env_3_PortraitB_01">
         <static>true</static>    
         <include>
@@ -321,6 +344,7 @@
         </include>
         <pose frame="">-1.279683 15.57037 0.0 -0.076901 0.0 -3.116718</pose>
 	</model>
+
 	<model name="env_3_PortraitB_02">
         <static>true</static>    
         <include>
@@ -328,6 +352,7 @@
         </include>
         <pose frame="">5.737017 24.08031 0.3 0.0 -0.0 0.0</pose>
 	</model>
+
 	<model name="env_3_PortraitB_03">
         <static>true</static>    
         <include>
@@ -335,6 +360,7 @@
         </include>
         <pose frame="">3.07138 15.650634 0.005494 -0.168428 0.0 3.104232</pose>
 	</model>
+
 	<model name="env_3_PortraitA_02">
         <static>true</static>    
         <include>
@@ -342,6 +368,7 @@
         </include>
         <pose frame="">7.937017 24.08031 0.3 0.0 -0.0 3.14</pose>
 	</model>
+
 	<model name="env_3_PortraitC_01">
         <static>true</static>    
         <include>
@@ -349,6 +376,7 @@
         </include>
         <pose frame="">-9.294904 16.473916 1.0 0.0 -0.0 1.554734</pose>
 	</model>
+	
 	<model name="env_3_PortraitD_01">
         <static>true</static>    
         <include>
@@ -363,6 +391,7 @@
         </include>
         <pose frame="">6.870181 24.08031 1.488439 0.0 -0.0 0.0</pose>
 	</model>
+	
 	<model name="env_3_PortraitE_01">
         <static>true</static>    
         <include>
@@ -377,6 +406,8 @@
         </include>
         <pose frame="">-6.193025 19.409792 0.3 0.0 -0.0 0.00429</pose>
 	</model>
+
+    
 	<model name="env_3_DeskPortraitA_01">
         <static>true</static>    
         <include>
@@ -389,6 +420,7 @@
         <include>
             <uri>model://aws_robomaker_residential_DeskPortraitA_02</uri>
         </include>
+        
         <pose frame="">2.046082 19.107074 0.070388 -0.018328 -0.000441 1.576216</pose>
 	</model>
 	<model name="env_3_DeskPortraitC_01">
@@ -447,6 +479,8 @@
         </include>
 	<pose frame="">2.48627 15.897475 -0.01266 -0.336621 0.0 3.046798</pose>
 	</model>
+    
+
 	<model name="env_3_Rangehood_01_001">
         <static>true</static>    
         <include>
@@ -454,6 +488,7 @@
         </include>
         <pose frame="">9.019794 17.63006 1.507605 0.0 -0.0 0.0</pose>
 	</model>
+	
 	<model name="env_3_Refrigerator_01_001">
         <static>true</static>    
         <include>
@@ -522,6 +557,7 @@
         <include>
             <uri>model://aws_robomaker_residential_TVCabinet_01</uri>
         </include>
+        
         <pose frame="">0.629509 15.816424 -0.017049 0.0 -0.0 1.5792</pose>
 	</model>
 	<model name="env_3_Vase_01_001">
@@ -538,6 +574,9 @@
         </include>
         <pose frame="">-6.09755 19.50382 0.028124 0.0 -0.0 0.0</pose>
 	</model>
+	
+
+	
 	<model name="env_3_Wardrobe_01_001">
         <static>true</static>    
         <include>
@@ -609,3 +648,6 @@
         <pose frame="">-2.396624 25.387607 0.502739 0.0 -0.0 0.0</pose>
 	</model>
 
+    
+    
+    

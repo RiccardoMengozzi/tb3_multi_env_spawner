@@ -1,9 +1,9 @@
+<model name="env_0_big_house">
+      <include>
+        <name>big_house</name>
+        <uri>model://turtlebot3_bighouse</uri>
+        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+      </include>
+    </model>
 
-	<model name="env_0_turtlebot3_big_house">
-        <static>true</static>    
-        <include>
-            <uri>model://turtlebot3_bighouse</uri>
-        </include>
-        <pose frame="">0.0 0.0 0.0 0.0 0.0 0.0</pose>
-	</model>
-
+  

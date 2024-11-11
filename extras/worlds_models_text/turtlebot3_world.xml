@@ -1,9 +1,9 @@
-
-    <model name="env_1_turtlebot3_world">
-      <static>true</static>
+<model name="env_1_turtlebot3_world">
       <include>
+        <name>turtlebot3_world</name>
         <uri>model://turtlebot3_world</uri>
+        <pose>20.0 0.0 0.0 0.0 0.0 0.0</pose>
       </include>
-      <pose frame="">20.0 0.0 0.0 0.0 0.0 0.0</pose>
     </model>
 
+  

@@ -1,0 +1,4 @@
+# Ignore auto_generated files...
+*
+# Except this file
+!.gitignore

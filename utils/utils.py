@@ -1,5 +1,6 @@
 import os
 import math
+import glob
 import json
 import numpy as np
 import random
@@ -108,7 +109,7 @@ def create_multi_env_world(num_envs : int,
         for i in range(num_envs):
             env_model = env_models[i]
             center = centers[i]
-            modify_name_and_pose(current_dir, package_name, env_model, center[0], center[1], namespace=f'env_{i}_')
+            format_world_file(current_dir, package_name, env_model, center[0], center[1], namespace=f'env_{i}_')
             with open(os.path.join(current_dir, 'src', package_name, 'extras', 'worlds_models_text', f'{env_model}.xml'), 'r') as file:
                 house_blocks += f'''
                 {file.read()} \n'''
@@ -179,95 +180,53 @@ def remove_empty_lines(file_path : str):
         file.writelines(non_empty_lines)
 
 
-def modify_name_and_pose(workspace_path : str,
+def format_world_file(workspace_path : str,
                          package_name : str,
                          env_model : list[str],
                          x_offset : int, 
                          y_offset : int, 
                          namespace : str) -> None:
     try:
-        file_path = os.path.join(workspace_path, 'src', package_name, 'extras', 'worlds_models_text', f'{env_model}.xml')
-        poses_file_path = os.path.join(workspace_path, 'src', package_name, 'extras', 'worlds_models_poses', f'{env_model}_poses.json')
+        template_file_path = os.path.join(workspace_path, 'src', package_name, 'worlds', f'{env_model}.world')
+        generated_file_path = os.path.join(workspace_path, 'src', package_name, 'extras', 'worlds_models_text', f'{env_model}.xml')
 
-        remove_empty_lines(file_path)
+        # Parse the XML file
+        tree = ET.parse(template_file_path)
+        root = tree.getroot()
 
-        with open(file_path, 'r') as file:
-            content = file.read()
-        
-        # Remove existing <xml> and <sdf> tags using regex
-        content = re.sub(r'<xml>.*?</xml>', '', content, flags=re.DOTALL)
-        content = re.sub(r'<sdf.*?>', '', content, count=1)
-        content = re.sub(r'</sdf>', '', content)
+        with open(generated_file_path, 'w', encoding='utf-8') as file:
+            # Find all <model> elements and add them to the new root
+            for model in root.findall(".//model"):
+                name = model.get('name')
+                pose = model.find('pose')
 
-        # Add <sdf> tag at the beginning and </sdf> at the end
-        content = f'<sdf version="1.6">\n{content}\n</sdf>'
-
-        # Parse the SDF content
-        root = ET.fromstring(content)
-
-
-        # Load original poses from a temporary file if it exists
-        if os.path.exists(poses_file_path):
-            with open(poses_file_path, 'r') as temp:
-                original_poses = json.load(temp)
-        else:
-            original_poses = {}
-        # Iterate over each model and modify the name and pose
-        for model in root.findall('model'):
-            current_name = model.get('name')
-            
-            # Store the original pose if not already stored
-            pose = model.find('pose')
-
-            if pose is not None:
-                if current_name not in original_poses:
-                    original_poses[current_name] = pose.text
-
-                # Remove existing 'env_' followed by numbers from the name
-                current_name = re.sub(r'env_\d+_', '', current_name)
-                # Update the name with the new namespace
-                model.set('name', f"{namespace}{current_name}")
-
-                # Reset pose to original before modifying
-                pose.text = original_poses[current_name]  # Reset to original pose
-
-                x, y, z, roll, pitch, yaw = map(float, pose.text.split())
-                pose.text = f"{x + x_offset} {y + y_offset} {z} {roll} {pitch} {yaw}"
-            else: #try to find the <pose> tag inside the <include> tag of the <model> tag
-                include = model.find('include')
-                pose = include.find('pose')
                 if pose is not None:
-                    if current_name not in original_poses:
-                        original_poses[current_name] = pose.text
-
                     # Remove existing 'env_' followed by numbers from the name
-                    current_name = re.sub(r'env_\d+_', '', current_name)
+                    name = re.sub(r'env_\d+_', '', name)
                     # Update the name with the new namespace
-                    model.set('name', f"{namespace}{current_name}")
-
-                    # Reset pose to original before modifying
-                    pose.text = original_poses[current_name]
+                    model.set('name', f"{namespace}{name}")
 
                     x, y, z, roll, pitch, yaw = map(float, pose.text.split())
                     pose.text = f"{x + x_offset} {y + y_offset} {z} {roll} {pitch} {yaw}"
+                else: #try to find the <pose> tag inside the <include> tag of the <model> tag
+                    include = model.find('include')
+                    pose = include.find('pose')
+                    if pose is not None:
 
-                else:
-                    raise Exception(f"Pose not found for model '{current_name}' inside {file_path}.")
+                        # Remove existing 'env_' followed by numbers from the name
+                        name = re.sub(r'env_\d+_', '', name)
+                        # Update the name with the new namespace
+                        model.set('name', f"{namespace}{name}")
+
+                        x, y, z, roll, pitch, yaw = map(float, pose.text.split())
+                        pose.text = f"{x + x_offset} {y + y_offset} {z} {roll} {pitch} {yaw}"
+
+                    else:
+                        raise Exception(f"Pose not found for model '{name}' inside {generated_file_path}.")
+                file.write(ET.tostring(model, encoding='unicode'))
 
 
 
-        # Convert back to string and remove <sdf> tags
-        updated_content = ET.tostring(root, encoding='unicode')
-        updated_content = re.sub(r'<sdf.*?>', '', updated_content, count=1)
-        updated_content = re.sub(r'</sdf>', '', updated_content)
-
-        # Write the modified content back to the file
-        with open(file_path, 'w') as file:
-            file.write(updated_content)
-
-        # Save original poses back to the temporary file
-        with open(poses_file_path, 'w') as temp:
-            json.dump(original_poses, temp)
 
     except Exception as e:
         print(f"[ERROR] [utils]: {e}")
@@ -275,7 +234,8 @@ def modify_name_and_pose(workspace_path : str,
 
 def create_rviz_config(rviz_config_dir : str, namespace : str) -> str:
     try:
-        with open(os.path.join(rviz_config_dir, 'config_template.rviz'), 'r') as file:
+
+        with open(os.path.join(rviz_config_dir, 'rviz_config_template.txt'), 'r') as file:
             template_lines = file.readlines()
 
         # Flags to track when inside a Topic or Update Topic block
