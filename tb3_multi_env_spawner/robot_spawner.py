@@ -3,14 +3,17 @@ import xml.etree.ElementTree as ET
 from gazebo_msgs.srv import SpawnEntity
 import rclpy
 from rclpy.node import Node
-
+import signal
 
 class RobotSpawner(Node):
     def __init__(self):
         super().__init__('robot_spawner')
+        # Register signal handler to clean up on termination
+        # signal.signal(signal.SIGINT, self.shutdown_callback)
+        # signal.signal(signal.SIGTERM, self.shutdown_callback)
 
         # Declare parameters
-        self.declare_parameter('robot_urdf', 'dummy.urdf')
+        self.declare_parameter('robot_urdf_path', 'dummy.urdf')
         self.declare_parameter('robot_name', 'dummy_robot')
         self.declare_parameter('robot_namespace', 'dummy_robot_ns')
         self.declare_parameter('use_namespace', True)
@@ -18,9 +21,14 @@ class RobotSpawner(Node):
         self.declare_parameter('y', 0.0)
         self.declare_parameter('z', 0.0)
         self.declare_parameter('yaw', 0.0)
+        self.declare_parameter('env_model_properties_path', 'dummy_world.json')
+        self.declare_parameter('cartographer_config_path', 'dummy_config.lua')
+        self.declare_parameter('cartographer_config_basename', 'dummy_config.lua')
+        self.declare_parameter('env_center', [0, 0])
+        self.declare_parameter('rviz_config_path', 'dummy_config.rviz')
 
         # Get parameters
-        self.robot_urdf = self.get_parameter('robot_urdf').get_parameter_value().string_value
+        self.robot_urdf = self.get_parameter('robot_urdf_path').get_parameter_value().string_value
         self.robot_name = self.get_parameter('robot_name').get_parameter_value().string_value
         self.robot_namespace = self.get_parameter('robot_namespace').get_parameter_value().string_value
         self.use_namespace = self.get_parameter('use_namespace').get_parameter_value().bool_value
@@ -28,6 +36,10 @@ class RobotSpawner(Node):
         self.position_y = self.get_parameter('y').get_parameter_value().double_value
         self.position_z = self.get_parameter('z').get_parameter_value().double_value
         self.yaw = self.get_parameter('yaw').get_parameter_value().double_value
+        self.env_center = self.get_parameter('env_center').get_parameter_value().double_array_value
+
+
+        self.robot_name = f'{self.robot_namespace}_{self.robot_name}' if self.use_namespace else self.robot_name
 
         # Set up client
         self.client = self.create_client(SpawnEntity, '/spawn_entity')
@@ -89,22 +101,15 @@ class RobotSpawner(Node):
         else:
             self.get_logger().error(f"Failed to spawn robot `{self.robot_name}`: {future.exception()}")
 
-    def shutdown(self):
-        self.get_logger().info('Shutting down RobotSpawner node.')
-        self.destroy_node()
+
 
 
 def main(args=None):
     rclpy.init(args=args)
     robot_spawner = RobotSpawner()
-
-    try:
-        rclpy.spin(robot_spawner)
-    except KeyboardInterrupt:
-        pass
-    finally:
-        robot_spawner.shutdown()
-        rclpy.shutdown()
+    rclpy.spin(robot_spawner)
+    robot_spawner.destroy_node()
+    rclpy.shutdown()
 
 
 if __name__ == '__main__':

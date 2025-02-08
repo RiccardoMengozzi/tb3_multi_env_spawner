@@ -107,11 +107,11 @@ def generate_launch_description():
     with open(urdf_path, 'r') as infp:
         robot_desc = infp.read()
         
-    model_folder = 'turtlebot3_' + TURTLEBOT3_MODEL
-    model_path = os.path.join(
+    robot_urdf_folder = 'turtlebot3_' + TURTLEBOT3_MODEL
+    robot_urdf_path = os.path.join(
         get_package_share_directory('turtlebot3_gazebo'),
         'models',
-        model_folder,
+        robot_urdf_folder,
         'model.sdf'
     )
 
@@ -165,10 +165,11 @@ def generate_launch_description():
         namespace = f'env_{i}'
         env_center = envs_centers[i]
         env_model = env_models[i]
+        env_model_properties_path = os.path.join(models_properties_dir, f'{env_model}_properties.json')
         rviz_config_file = utils.create_rviz_config(rviz_config_dir, namespace)
 
         if random_pose:
-            robot_init_pose = utils.get_random_pose(models_properties_dir, env_model, env_center)
+            robot_init_pose = utils.get_random_pose(env_model_properties_path, env_center)
         else:
             robot_init_pose = [robot_pos_x + env_center[0],
                                robot_pos_y + env_center[1],
@@ -188,23 +189,29 @@ def generate_launch_description():
                 ('/tf_static', f'/{namespace}/tf_static')
                 ],
         )   
-
-        spawn_tb3_cmd = Node(
+        robot_spawner_cmd = Node(
             package=package_name,
-            executable='spawn_tb3',
+            executable='robot_spawner',
             output='screen',
-            arguments=[
-                '-urdf', model_path,
-                '-n', f'{namespace}_tb3',
-                '-ns', namespace,
-                '-x', str(robot_init_pose[0]),
-                '-y', str(robot_init_pose[1]),
-                '-z', '0.01',
-                '-yaw', str(robot_init_pose[2]),
-            ],
+            namespace=namespace,
+            parameters=[{
+                'robot_name': 'tb3',
+                'robot_namespace': namespace,
+                'robot_urdf_path': robot_urdf_path,
+                'x': float(robot_init_pose[0]),
+                'y': float(robot_init_pose[1]),
+                'z': 0.01,
+                'yaw': float(robot_init_pose[2]),
+                'env_center': env_center,
+
+                # params needed for reset_environment
+                'env_model_properties_path': env_model_properties_path, 
+                'cartographer_config_path': os.path.join(get_package_share_directory('turtlebot3_cartographer'), 'config'),
+                'cartographer_config_basename': 'turtlebot3_lds_2d.lua',
+                'rviz_config_path': rviz_config_file,
+            }]
         )
 
-        
         cartographer_cmd = Node(
             package='cartographer_ros',
             executable='cartographer_node',
@@ -258,7 +265,7 @@ def generate_launch_description():
 
 
         launch_actions.append(robot_state_pub_cmd)
-        launch_actions.append(spawn_tb3_cmd)
+        launch_actions.append(robot_spawner_cmd)
         launch_actions.append(cartographer_cmd)
         launch_actions.append(rviz_cmd)
         launch_actions.append(occupancy_grid_cmd)

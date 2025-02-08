@@ -16,6 +16,7 @@
   <exec_depend>ros2launch</exec_depend>
 
   <depend>gazebo_msgs</depend>
+  <depend>custom_interfaces</depend>
 
   
 

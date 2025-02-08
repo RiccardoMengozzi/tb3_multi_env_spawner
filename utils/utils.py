@@ -142,8 +142,8 @@ def create_multi_env_world(num_envs : int,
         return None
     
 
-def get_random_pose(models_properties_dir : str, env_model : list[str], env_center : list[int]) -> list[list[int]]:
-    with open(os.path.join(models_properties_dir, f'{env_model}_properties.json'), 'r') as file:
+def get_random_pose(env_model_path : str, env_center : int) -> list[int]:
+    with open(env_model_path, 'r') as file:
         data = json.load(file)
     # Access the starting coordinates
     x_start = data['x_start']

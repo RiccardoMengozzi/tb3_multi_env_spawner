@@ -23,7 +23,8 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            f'spawn_tb3 = src.spawn_tb3:main',
+            'robot_spawner = tb3_multi_env_spawner.robot_spawner:main',
+            'reset_environment = tb3_multi_env_spawner.reset_environment:main',
         ],
     },
 )
