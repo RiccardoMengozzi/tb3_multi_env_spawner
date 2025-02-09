@@ -1,8 +1,8 @@
-<model name="env_0_big_house">
+<model name="env_6_big_house">
       <include>
         <name>big_house</name>
         <uri>model://turtlebot3_bighouse</uri>
-        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.0 42.0 0.0 0.0 0.0 0.0</pose>
       </include>
     </model>
 
