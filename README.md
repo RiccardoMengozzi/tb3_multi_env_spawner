@@ -4,6 +4,7 @@ The `tb3_multi_env_spawner` package is designed to help multi-environment reinfo
 
 ## Table of Contents
 - [Preview](#preview)
+- [Installation](#installation)
 - [Usage](#usage)
 - [Parameters](#parameters)
 - [Environment Modes](#environment-modes)
@@ -16,7 +17,38 @@ The `tb3_multi_env_spawner` package is designed to help multi-environment reinfo
 
 ---
 
+## Installation
+
+### Create a workspace
+
+```
+mkdir -p ~/turtlebot3_ws/src
+cd ~/turtlebot3_ws
+```
+
+### Clone the required repositories
+
+```
+cd src
+git clone https://github.com/RiccardoMengozzi/tb3_multi_env_spawner.git
+git clone https://github.com/RiccardoMengozzi/custom_interfaces.git
+```
+
+### Build and source your workspace
+```
+cd ~/turtlebot3_ws
+colcon build
+```
+
+```
+source ~/turtlebot3_ws/install/setup.bash
+```
+
+---
+
 ## Usage
+
+### Spawn the environments
 All parameters can be configured in `/config/launch_params.yaml` (see the [Parameters](#parameters) section below for details).
 
 To launch the package, set the TurtleBot3 model in your terminal:
@@ -29,6 +61,23 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch tb3_multi_env_spawner tb3_multi_env_spawner.launch.py
 
 ```
+### Reset an environment
+
+It is possible to reset one of the environments spawned with the `\reset_environment` service, which uses the `custom_interfaces/srv/ResetEnvironment` interface, whose structure is the followng:
+
+```srv
+string entity_name
+string entity_namespace
+---
+bool success
+```
+
+To do that, just call the service specifying the name of the entity and the namespace of the environment to reset, for example:
+
+```
+ros2 service call reset_environment custom_interfaces/srv/ResetEnvironment "{entity_name: "tb3", entity_namespace: "env_2"}"
+```
+
 
 ## Parameters
 | Parameter                | Default Value       | Description                                                                                               |
