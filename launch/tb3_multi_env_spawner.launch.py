@@ -168,8 +168,15 @@ def generate_launch_description():
         }.items()
     )
 
+    # Reset environment service node
+    reset_env_cmd = Node(
+        package=package_name,
+        executable='reset_environment',
+        output='screen',
+    )
+
     # Add commands to the launch actions
-    launch_actions.extend([set_gazebo_models_path_cmd, declare_use_cartographer_cmd, gz_server_cmd, gz_client_cmd])
+    launch_actions.extend([set_gazebo_models_path_cmd, declare_use_cartographer_cmd, gz_server_cmd, gz_client_cmd, reset_env_cmd])
 
     # Generate environment centers
     envs_centers = utils.generate_centers(num_envs, env_models, models_properties_dir=models_properties_dir)
@@ -281,7 +288,10 @@ def generate_launch_description():
             condition=IfCondition(LaunchConfiguration('use_cartographer')),
         )
 
+
         # Add nodes to launch actions
         launch_actions.extend([robot_state_pub_cmd, robot_spawner_cmd, cartographer_cmd, rviz_cmd, occupancy_grid_cmd])
+    
+
 
     return LaunchDescription(launch_actions)
