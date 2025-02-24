@@ -133,12 +133,19 @@ def generate_launch_description():
     # Launch actions list
     launch_actions = []
 
+    existing_gazebo_models_paths = os.environ.get('GAZEBO_MODEL_PATH', '')
+    new_gazebo_models_paths = (
+        f"{workspace_dir}/src/{package_name}/models/aws_models:"
+        f"{workspace_dir}/src/{package_name}/models/fuel_models:"
+        f"{workspace_dir}/src/{package_name}/models/turtlebot3_bighouse_model"
+    )
+
+    full_gazebo_models_paths = existing_gazebo_models_paths + new_gazebo_models_paths
+
     # Set Gazebo model paths
     set_gazebo_models_path_cmd = SetEnvironmentVariable(
-        name='GAZEBO_MODEL_PATH',
-        value=f'{workspace_dir}/src/{package_name}/models/aws_models: \
-                {workspace_dir}/src/{package_name}/models/fuel_models: \
-                {workspace_dir}/src/{package_name}/models/turtlebot3_bighouse_model'
+        name ='GAZEBO_MODEL_PATH',
+        value = full_gazebo_models_paths
     )
 
     # Declare launch argument for Cartographer
