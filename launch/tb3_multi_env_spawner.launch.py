@@ -137,7 +137,8 @@ def generate_launch_description():
     set_gazebo_models_path_cmd = SetEnvironmentVariable(
         name='GAZEBO_MODEL_PATH',
         value=f'{workspace_dir}/src/{package_name}/models/aws_models: \
-                {workspace_dir}/src/{package_name}/models/fuel_models'
+                {workspace_dir}/src/{package_name}/models/fuel_models: \
+                {workspace_dir}/src/{package_name}/models/turtlebot3_bighouse'
     )
 
     # Declare launch argument for Cartographer
