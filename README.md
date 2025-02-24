@@ -4,9 +4,11 @@ The `tb3_multi_env_spawner` package is designed to help multi-environment reinfo
 
 ## Table of Contents
 - [Preview](#preview)
+- [Installation](#installation)
 - [Usage](#usage)
 - [Parameters](#parameters)
 - [Environment Modes](#environment-modes)
+- [Models](#models)
 
 ---
 
@@ -15,6 +17,59 @@ The `tb3_multi_env_spawner` package is designed to help multi-environment reinfo
 ![Gazebo view](https://github.com/user-attachments/assets/5ea8fbbe-7a17-4c3e-a8e2-ce05222d86fa)
 
 ---
+
+## Installation
+
+### Install dependencies
+
+Since the package has been created with the scope of using it for deep reinforcement learning exploration, it automatically opens Cartographer and Nav2, so these are dependecies that need to be installed. However, if you don't need them, simply remove them from the launch file.
+
+**The project has been tested on Gazebo 11**
+
+ Install Cartographer
+ ```console
+sudo apt install ros-humble-cartographer
+sudo apt install ros-humble-cartographer-ros
+```
+Install Navigation2
+ ```console
+sudo apt install ros-humble-navigation2
+sudo apt install ros-humble-nav2-bringup
+```
+Install TurtleBot3 Packages
+ ```console
+sudo apt install ros-humble-dynamixel-sdk
+sudo apt install ros-humble-turtlebot3-msgs
+sudo apt install ros-humble-turtlebot3
+```
+
+
+
+### Install needed repositories
+
+Now create a ros2 workspace:
+
+ ```console
+mkdir -p ~/turtlebot3_ws/src
+cd ~/turtlebot3_ws/src
+```
+
+Clone the following repositories:
+ ```console
+git clone -b humble-devel \
+https://github.com/ROBOTIS-GIT/turtlebot3_simulations.git
+git clone https://github.com/RiccardoMengozzi/custom_interfaces
+git clone https://github.com/RiccardoMengozzi/tb3_multi_env_spawner
+```
+
+Build your workspace:
+```
+cd ~/turtlebot3_ws
+rosdep install -i --from-path src --rosdistro humble -y
+colcon build --symlink-install
+. install/setup.bash
+```
+
 
 ## Usage
 All parameters can be configured in `/config/launch_params.yaml` (see the [Parameters](#parameters) section below for details).
@@ -63,4 +118,27 @@ The `env.mode` parameter supports three different modes for environment setup:
 3. **`random_models`**:
    - Randomly selects an environment model for each instance from the `env.available_models` list.
    
+## Models 
 
+You can add more models in the `~/turtlebot3_ws/src/tb3_multi_env_spawner/models` directory. After that, you need to also add the paths to your new added models in the launch file, updating the environemnt variable `GAZEBO_MODEL_PATH`.
+
+From this:
+
+```console
+   new_gazebo_models_paths = (
+      f"{workspace_dir}/src/{package_name}/models/aws_models:"
+      f"{workspace_dir}/src/{package_name}/models/fuel_models:"
+      f"{workspace_dir}/src/{package_name}/models/turtlebot3_bighouse_model"
+   )
+```
+To this:
+```console
+   new_gazebo_models_paths = (
+      f"{workspace_dir}/src/{package_name}/models/aws_models:"
+      f"{workspace_dir}/src/{package_name}/models/fuel_models:"
+      f"{workspace_dir}/src/{package_name}/models/turtlebot3_bighouse_model:"
+      f"{workspace_dir}/src/{package_name}/models/<your model>"
+   )
+```
+
+Make sure the path points to the directory containing the model, without having any subdirectories inside of it.
