@@ -84,6 +84,10 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch tb3_multi_env_spawner tb3_multi_env_spawner.launch.py
 
 ```
+
+**NOTE** : the first time you launch a new environment, it could take a while, in particular big environments such as `hospital`.
+
+
 ### Environment Reset
 
 Every environment can be reset independently. This is done through the service `reset_environment`.
@@ -157,7 +161,11 @@ To this:
 
 Make sure the path points to the directory containing the model, without having any subdirectories inside of it.
 
-To create a new environment, you need to create a new `.world` template with the new models you added. Simply follow the structure of the already existing `.world` templates in the `/worlds` directory. Also, every `.world` file needs a `world_properties.json` file that defines the property of the environment, such as its dimensions and the possible points of the environment in which the Turtlebot can spawn without colliding with obstacles (this can be improved by creating a software that automatically generates the properties). These `.json` files can be found in the `/extras` directory. Here an example:
+To create a new environment, you need to create a new `.world` template with the new models you added. Simply follow the structure of the already existing `.world` templates in the `/worlds` directory. Also, every `.world` file needs a `world_properties.json` file that defines the property of the environment, such as its dimensions and the possible points of the environment in which the Turtlebot can spawn without colliding with obstacles (this can be improved by creating a software that automatically generates the properties). 
+
+**NOTE**: The `hospital.world` does not currently have a `properties.json` file.
+
+These `.json` files can be found in the `/extras` directory. Here an example:
 
 ``` console
 {
