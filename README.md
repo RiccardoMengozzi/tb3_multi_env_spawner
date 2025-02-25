@@ -22,7 +22,7 @@ The `tb3_multi_env_spawner` package is designed to help multi-environment reinfo
 
 ### Install dependencies
 
-Since the package has been created with the scope of using it for deep reinforcement learning exploration, it automatically opens Cartographer and Nav2, so these are dependecies that need to be installed. However, if you don't need them, simply remove them from the launch file.
+Since the package has been created with the scope of using it for deep reinforcement learning exploration, it automatically opens Cartographer, so this is a dependecy that need to be installed. However, if you don't need it, simply remove it from the launch file.
 
 **The project has been tested on Gazebo 11**
 
@@ -30,11 +30,6 @@ Since the package has been created with the scope of using it for deep reinforce
  ```console
 sudo apt install ros-humble-cartographer
 sudo apt install ros-humble-cartographer-ros
-```
-Install Navigation2
- ```console
-sudo apt install ros-humble-navigation2
-sudo apt install ros-humble-nav2-bringup
 ```
 Install TurtleBot3 Packages
  ```console
@@ -101,7 +96,7 @@ bool success
 ```
 
 Be sure the `entity_name` and `entity_namespace` match the ones you see on Gazebo. 
-The service will delete the selected entity, restart the respective Rviz, Cartographer, Nav2, and then respawn the entity in a random point.
+The service will delete the selected entity, restart the respective Rviz, Cartographer, and then respawn the entity in a random point.
 
 ## Parameters
 | Parameter                | Default Value       | Description                                                                                               |
