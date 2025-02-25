@@ -84,6 +84,20 @@ export TURTLEBOT3_MODEL=burger
 ros2 launch tb3_multi_env_spawner tb3_multi_env_spawner.launch.py
 
 ```
+### Environment Reset
+
+Every environment can be reset independently. This is done through the service `reset_environment`.
+To reset an environment, simply call the service with the following request/response:
+
+```console
+string entity_name
+string entity_namespace
+---
+bool success
+```
+
+Be sure the `entity_name` and `entity_namespace` match the ones you see on Gazebo. 
+The service will delete the selected entity, restart the respective Rviz, Cartographer, Nav2, and then respawn the entity in a random point.
 
 ## Parameters
 | Parameter                | Default Value       | Description                                                                                               |
@@ -142,3 +156,51 @@ To this:
 ```
 
 Make sure the path points to the directory containing the model, without having any subdirectories inside of it.
+
+To create a new environment, you need to create a new `.world` template with the new models you added. Simply follow the structure of the already existing `.world` templates in the `/worlds` directory. Also, every `.world` file needs a `world_properties.json` file that defines the property of the environment, such as its dimensions and the possible points of the environment in which the Turtlebot can spawn without colliding with obstacles (this can be improved by creating a software that automatically generates the properties). These `.json` files can be found in the `/extras` directory. Here an example:
+
+``` console
+{
+  "x_width": 16,
+  "y_width": 15,
+  "x_start": -7,
+  "y_start": -7,
+  "resolution": 1,
+  "grid": [
+    [1,1,1,0,1,1,1,1,0,1,1,1,0],
+    [1,1,1,0,1,1,1,1,1,1,1,1,0],
+    [1,1,1,0,0,0,0,0,0,0,1,1,0],
+    [1,1,1,0,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,1,0,1,1,1,1,1,1,1],
+    [1,1,1,0,1,1,1,1,1,0,0,1,1],
+    [1,1,1,0,1,1,1,1,1,1,1,1,1],
+    [1,1,1,0,1,1,1,1,0,0,0,0,0],
+    [1,1,1,1,1,1,1,1,0,1,1,1,1],
+    [1,1,1,0,1,1,1,1,0,0,1,1,1],
+    [1,1,1,0,1,1,1,1,1,1,1,1,1],
+    [1,1,0,0,0,0,0,1,1,1,1,1,1],
+    [1,1,0,0,0,0,0,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,0],
+    [1,1,1,1,1,1,1,1,1,1,1,1,1]
+  ]
+}
+
+
+
+```
+
+1. **`x_width`**: defines the total x-length of the environment.
+
+2. **`y_width`**: defines the total y-length of the environment.
+
+3. **`x_start`**: defines the starting x-coordinate of the environment with respect to the center from which to consider the possible spawn positions of the Turtlebot.
+
+4. **`y_start`**: defines the starting y-coordinate of the environment with respect to the center from which to consider the possible spawn positions of the Turtlebot.
+
+5. **`resolution`**: defines the resolution (in meters) of the possible spawning points grid. 
+
+6. **`grid`**: defines the possible spawning points in the 2d Map. **1** if the spawn is possible, **0** if not.
+
+Example shown below:
+
+![Image](https://github.com/user-attachments/assets/e8a85373-c9d7-4415-8f74-531e465aadd0)
