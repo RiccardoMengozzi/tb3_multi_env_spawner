@@ -1,6 +1,9 @@
 launch:
   verbose: False
-  use_cartographer: True
+cartographer:
+  enable: True
+  map_resolution: 0.05
+  map_publish_period: 0.2
 gazebo:
   gui: True # set to false for better performances during training
   verbose: False

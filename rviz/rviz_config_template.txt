@@ -360,7 +360,7 @@ Visualization Manager:
             Value: /trajectory_node_list
           Value: true
         - Class: rviz_default_plugins/MarkerArray
-          Enabled: true
+          Enabled: false
           Name: Constraints
           Namespaces:
             Inter constraints, different trajectories: true

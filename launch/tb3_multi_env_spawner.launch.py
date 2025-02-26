@@ -56,7 +56,9 @@ def generate_launch_description():
     # Extract parameters from the YAML file
     gui = params['gazebo']['gui']
     verbose = params['launch']['verbose']
-    use_cartographer = params['launch']['use_cartographer']
+    use_cartographer = params['cartographer']['enable']
+    map_resolution = params['cartographer']['map_resolution']
+    map_publish_period = params['cartographer']['map_publish_period']
     gz_verbose = params['gazebo']['verbose']
     num_envs = params['env']['num_envs']
     mode = params['env']['mode'] 
@@ -252,7 +254,7 @@ def generate_launch_description():
             namespace=namespace,
             output='screen',
             parameters=[{
-                'use_sim_time': True
+                'use_sim_time': True,
             }],
             arguments=[
                 '-configuration_directory', os.path.join(get_package_share_directory('turtlebot3_cartographer'), 'config'),
@@ -290,9 +292,11 @@ def generate_launch_description():
             output='screen',
             parameters=[{
                 'use_sim_time': True,
-                'resolution': '0.05',
-                'publish_period_sec': '1.0'
             }],
+            arguments=[
+                '-resolution', str(map_resolution),
+                '-publish_period_sec', str(map_publish_period),
+            ],
             condition=IfCondition(LaunchConfiguration('use_cartographer')),
         )
 
