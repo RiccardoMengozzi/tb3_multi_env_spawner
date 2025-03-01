@@ -1,6 +1,6 @@
 import os
 import math
-import glob
+from pathlib import Path
 import json
 import numpy as np
 import random
@@ -52,7 +52,7 @@ def create_multi_env_world(num_envs : int,
                            package_name : str,
                            mode='single_model') -> str:
 
-    current_dir = os.getcwd()  
+    current_dir = Path(get_package_share_directory(package_name)).resolve().parents[3]  
     models_properties_dir = os.path.join(current_dir, 'src', package_name, 'extras', 'models_properties')
 
     

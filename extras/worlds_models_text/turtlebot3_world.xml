@@ -1,8 +1,8 @@
-<model name="env_1_turtlebot3_world">
+<model name="env_0_turtlebot3_world">
       <include>
         <name>turtlebot3_world</name>
         <uri>model://turtlebot3_world</uri>
-        <pose>20.0 0.0 0.0 0.0 0.0 0.0</pose>
+        <pose>0.0 0.0 0.0 0.0 0.0 0.0</pose>
       </include>
     </model>
 

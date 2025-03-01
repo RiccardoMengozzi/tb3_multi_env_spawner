@@ -1,6 +1,7 @@
 import os
 import yaml
 import random
+from pathlib import Path
 
 import utils.utils as utils
 
@@ -34,7 +35,7 @@ def generate_launch_description():
 
     # Package and workspace details
     package_name = 'tb3_multi_env_spawner'
-    workspace_dir = os.getcwd()
+    workspace_dir = Path(get_package_share_directory(package_name)).resolve().parents[3]
 
     # Paths to directories and files
     world_path = os.path.join(workspace_dir, 'src', package_name, 'worlds')
@@ -299,6 +300,8 @@ def generate_launch_description():
             ],
             condition=IfCondition(LaunchConfiguration('use_cartographer')),
         )
+
+
 
 
         # Add nodes to launch actions

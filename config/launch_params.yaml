@@ -8,11 +8,11 @@ gazebo:
   gui: True # set to false for better performances during training
   verbose: False
 env:
-  available_models: ['turtlebot3_bighouse', 'turtlebot3_world', 'small_warehouse', 'small_house']  #, 'hospital']
-  num_envs: 4
+  available_models: ['turtlebot3_bighouse', 'turtlebot3_world', 'small_warehouse', 'small_house', 'empty_world']  #, 'hospital']
+  num_envs: 1
   # single_model, multiple_models, random_models
-  mode: 'multiple_models' 
-  model: 'small_warehouse' # for single_model
+  mode: 'single_model' 
+  model: 'turtlebot3_world' # for single_model
   models: ['turtlebot3_bighouse', # for multiple_models, random_models choose between all available worlds
            'turtlebot3_world',
            'small_warehouse',
