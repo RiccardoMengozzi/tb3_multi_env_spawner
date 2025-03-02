@@ -1,6 +1,7 @@
 import os
 import yaml
 import random
+import numpy as np
 from pathlib import Path
 
 import utils.utils as utils
@@ -186,11 +187,32 @@ def generate_launch_description():
         output='screen',
     )
 
-    # Add commands to the launch actions
-    launch_actions.extend([set_gazebo_models_path_cmd, declare_use_cartographer_cmd, gz_server_cmd, gz_client_cmd, reset_env_cmd])
 
     # Generate environment centers
     envs_centers = utils.generate_centers(num_envs, env_models, models_properties_dir=models_properties_dir)
+    print(f"[INFO] [{package_name}.launch.py] Environment centers: {envs_centers}")
+
+    # Publisher for the environments properties
+    envs_properties_publisher_cmd = Node(
+        package=package_name,
+        executable='envs_properties_publisher',
+        output='screen',
+        parameters=[{
+            'envs_properties_dir_path': models_properties_dir,
+            'env_models': env_models,
+            'envs_centers': np.array(envs_centers).flatten().tolist()
+        }]
+    )
+
+
+    # Add commands to the launch actions
+    launch_actions.extend([set_gazebo_models_path_cmd, 
+                           declare_use_cartographer_cmd, 
+                           gz_server_cmd, gz_client_cmd, 
+                           reset_env_cmd,
+                           envs_properties_publisher_cmd])
+
+
 
     # Create and configure nodes for each environment
     for i in range(num_envs):
