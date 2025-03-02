@@ -47,6 +47,7 @@ class EnvsPropertiesPublisher(Node):
         env_name = f'env_{index}'
         env_properties = EnvProperties()
         env_properties.name = env_name
+        env_properties.file_path = os.path.join(self.envs_properties_dir_path, filename) + '_properties.json'
         # self.envs_centers is a 1D flattened list of an array of centers
         env_properties.center = [self.envs_centers[2*index], self.envs_centers[2*index+1]]
         env_properties.x_width = properties['x_width']

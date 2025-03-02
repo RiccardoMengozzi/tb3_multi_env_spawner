@@ -4,7 +4,7 @@ import random
 import numpy as np
 from pathlib import Path
 
-import utils.utils as utils
+from tb3_multi_env_spawner import utils
 
 from launch import LaunchDescription
 from ament_index_python.packages import get_package_share_directory
