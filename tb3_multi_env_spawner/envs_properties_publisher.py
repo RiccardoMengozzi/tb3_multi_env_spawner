@@ -55,6 +55,7 @@ class EnvsPropertiesPublisher(Node):
         env_properties.x_start = properties['x_start']
         env_properties.y_start = properties['y_start']
         env_properties.resolution = float(properties['resolution'])
+        env_properties.grid_size = properties['grid_size']
         env_properties.grid = np.array(properties['grid']).flatten().tolist()
         return env_properties
 
