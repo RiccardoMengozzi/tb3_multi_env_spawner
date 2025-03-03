@@ -11,7 +11,7 @@ from rcl_interfaces.srv import GetParameters
 from custom_interfaces.srv import ResetEnvironment
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup
-from utils import utils
+from tb3_multi_env_spawner import utils
 
 class ResetEnvironmentService(Node):
     """

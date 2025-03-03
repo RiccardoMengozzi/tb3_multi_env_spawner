@@ -142,7 +142,7 @@ def create_multi_env_world(num_envs : int,
         return None
     
 
-def get_random_pose(env_model_path : str, env_center : int) -> list[int]:
+def get_random_pose(env_model_path : str, env_center : tuple[int]) -> list[int]:
     with open(env_model_path, 'r') as file:
         data = json.load(file)
     # Access the starting coordinates
@@ -154,12 +154,10 @@ def get_random_pose(env_model_path : str, env_center : int) -> list[int]:
     grid = np.array(data['grid'])
     # Find the indices of the cells where the value is 1
     indices = np.argwhere(grid == 1)
-    # Select a random coordinate from the indices
+
     random_index = random.choice(indices)
-
-    # Adjust the coordinates based on x_start and y_start
-
     random_coordinate = (x_start + random_index[0] * resolution, y_start + random_index[1] * resolution)  # (x, y)
+
     random_yaw = np.random.uniform(0, 2*np.pi)
     random_pose = [random_coordinate[0] + env_center[0], random_coordinate[1] + env_center[1], random_yaw]
 

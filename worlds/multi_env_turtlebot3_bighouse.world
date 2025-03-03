@@ -63,25 +63,5 @@
 
    
 
-                <model name="env_2_turtlebot3_bighouse">
-      <include>
-        <name>turtlebot3_bighouse</name>
-        <uri>model://turtlebot3_bighouse</uri>
-        <pose>16.0 15.0 0.0 0.0 0.0 0.0</pose>
-      </include>
-    </model>
-
-   
-
-                <model name="env_3_turtlebot3_bighouse">
-      <include>
-        <name>turtlebot3_bighouse</name>
-        <uri>model://turtlebot3_bighouse</uri>
-        <pose>0.0 15.0 0.0 0.0 0.0 0.0</pose>
-      </include>
-    </model>
-
-   
-
     </world>
 </sdf>
