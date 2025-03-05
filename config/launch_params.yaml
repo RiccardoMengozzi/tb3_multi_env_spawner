@@ -9,9 +9,9 @@ gazebo:
   verbose: False
 env:
   available_models: ['turtlebot3_bighouse', 'turtlebot3_world', 'small_warehouse', 'small_house', 'empty_world']  #, 'hospital']
-  num_envs: 4
+  num_envs: 2
   # single_model, multiple_models, random_models
-  mode: 'multiple_models' 
+  mode: 'single_model' 
   model: 'turtlebot3_bighouse' # for single_model
   models: ['turtlebot3_bighouse', # for multiple_models, random_models choose between all available worlds
            'turtlebot3_world',

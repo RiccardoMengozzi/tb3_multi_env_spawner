@@ -41,9 +41,7 @@ class EnvsPropertiesPublisher(Node):
                         print(f"Error loading {filename}: {e}")
         return data
     
-    def create_env_properties(self, filename, properties):
-        # Check for which env_i the particular model is used
-        index = self.env_models.index(filename)
+    def create_env_properties(self, index, filename, properties):
         env_name = f'env_{index}'
         env_properties = EnvProperties()
         env_properties.name = env_name
@@ -62,12 +60,15 @@ class EnvsPropertiesPublisher(Node):
 
     def publish_envs_properties(self):
         envs_properties_msg = EnvsProperties()
-        for filename, properties in self.data.items():
-            world_name = filename.split('_properties.json')[0]
-            if world_name in self.env_models:
-                envs_properties_msg.data.append(self.create_env_properties(world_name, properties))
+        self.counter = 0
+        for env in self.env_models:
+            filename = env + '_properties.json'
+            if filename in self.data:
+                envs_properties_msg.data.append(self.create_env_properties(self.counter, filename, self.data[filename]))
+                self.counter += 1
         self.envs_properties_pub.publish(envs_properties_msg)
 
+  
 
 def main():
     rclpy.init()
