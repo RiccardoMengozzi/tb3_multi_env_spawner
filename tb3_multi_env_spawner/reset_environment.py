@@ -3,126 +3,109 @@ import os
 import signal
 import subprocess
 import time
-from threading import Event
-import rclpy.callback_groups
 from rclpy.node import Node
-from gazebo_msgs.srv import DeleteEntity
-from rcl_interfaces.srv import GetParameters
-from custom_interfaces.srv import ResetEnvironment
 from rclpy.executors import MultiThreadedExecutor
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
+
+from gazebo_msgs.srv import DeleteEntity
+from gazebo_msgs.srv import GetModelList
+from rcl_interfaces.srv import GetParameters
+from custom_interfaces.srv import ResetEnv
+
+
+from tf2_msgs.msg import TFMessage
+from nav_msgs.msg import OccupancyGrid
+from sensor_msgs.msg import LaserScan
+
+
+
 from tb3_multi_env_spawner import utils
 
-class ResetEnvironmentService(Node):
-    """
-    ROS2 Node that provides a service to reset the simulation environment. 
-    The service performs the following:
-    - Deletes existing robot entities.
-    - Stops associated processes (e.g., cartographer, robot spawner).
-    - Spawns a new robot entity at a random position.
-    - Restarts necessary processes (e.g., cartographer).
-    """
 
-    def __init__(self):
-        """
-        Initialize the ResetEnvironmentService Node.
-        - Sets up the ROS2 service.
-        - Connects to the `delete_entity` service.
-        """
+
+
+class ResetEnvironment(Node):
+    """Service to reset simulation environments."""
+
+    def __init__(self) -> None:
         super().__init__('reset_environment')
         self.package_name = 'tb3_multi_env_spawner'
+        self._reset_params = {}
+        self._sensor_data = {
+            'tf': None,
+            'map': None,
+            'scan': None
+        }
+        self.cb_group = MutuallyExclusiveCallbackGroup()
+        self._init_service()
+        self.get_logger().info('Reset Environment node initialized')
 
-        # Use a reentrant callback group to allow multiple threads to execute callbacks concurrently.
-        self.callback_group = ReentrantCallbackGroup()
-        self.done_event = Event()
 
-        # Create the custom service using the ResetEnvironment type
-        self.srv = self.create_service(
-            ResetEnvironment, 
+    def _init_service(self) -> None:
+        """ Initializes Ros services and clients """
+        self.reset_service = self.create_service(
+            ResetEnv, 
             'reset_environment', 
-            self.reset_environment_callback,
-            callback_group=self.callback_group
+            self._reset_service_callback,
+            callback_group=self.cb_group
         )
-        
-        # Client for deleting entities
-        self.del_entity_cli = self.create_client(
-            DeleteEntity, 
-            'delete_entity', 
-            callback_group=self.callback_group
+
+        self.delete_entity_client = self.create_client(
+            DeleteEntity,
+            'delete_entity',
         )
-        
-        self.get_logger().info('Connecting to delete_entity service...')
-        while not self.del_entity_cli.wait_for_service(timeout_sec=1.0):
-            self.get_logger().info('Connecting to delete_entity service...')
-        self.get_logger().info('...Connected!')
-        
-    def send_delete_entity_request(self, request):
-        """
-        Sends a request to delete an entity from the simulation.
+        self._wait_for_service(self.delete_entity_client, 'delete_entity')
 
-        Args:
-            request: The request object containing entity details (namespace and name).
+        self.model_list_client = self.create_client(
+            GetModelList,
+            'get_model_list'
+        )
+        self._wait_for_service(self.model_list_client, 'get_model_list')
 
-        Returns:
-            The response of the delete entity service.
-        """
-        self.done_event.clear()
-        event = Event()
-        
-        def done_callback(future):
-            nonlocal event
-            event.set()
 
-        delete_entity_req = DeleteEntity.Request()
-        delete_entity_req.name = f'{request.entity_namespace}_{request.entity_name}'
-        future = self.del_entity_cli.call_async(delete_entity_req)
-        future.add_done_callback(done_callback)
+    def _reset_service_callback(self, request, response) -> ResetEnv.Response:
+        """Reset simulation environment."""
+        try:
+            self.get_logger().info(f'Resetting environment {request.entity_namespace}')
+            # Get parameters client:
+            param_client = self.create_client(
+                GetParameters,
+                f'/{request.entity_namespace}/robot_spawner/get_parameters'
+            )
+            self._wait_for_service(param_client, 'get_parameters')
 
-        # Wait for action to be done
-        event.wait()
-        return future.result()
+            # Execute reset sequence
+            self._get_parameters(param_client)
+            self._delete_existing_entity(request)
+            self._cleanup_processes(request.entity_namespace)
+            self._spawn_new_entity(request.entity_namespace)
+            self._restart_mapping_nodes(request.entity_namespace)
+            self._verify_sensor_ready()
+            self._verify_model_is_spawned()
 
-    def send_get_parameters_request(self, names):
-        """
-        Sends a request to get parameters from the `robot_spawner` node.
+            response.success = True
 
-        Args:
-            names: List of parameter names to retrieve.
+        except Exception as e:
+            self.get_logger().error(f'Error resetting environment: {e}')
+            response.success = False
 
-        Returns:
-            The response containing the requested parameters.
-        """
-        self.done_event.clear()
-        event = Event()
-        
-        def done_callback(future):
-            nonlocal event
-            event.set()
+        return response
 
-        get_parameters_req = GetParameters.Request()
-        get_parameters_req.names = names
+    def _get_parameters(self, client) -> None:
+        """ Get parameters of the environment to be reset """
+        param_names = [
+            "robot_name", "robot_namespace", "robot_urdf_path", "use_namespace",
+            "env_model_properties_path", "env_center", "cartographer_config_path",
+            "cartographer_config_basename", "rviz_config_path"
+        ]
 
-        if not self.params_cli.wait_for_service(timeout_sec=5.0):
-            self.get_logger().error("GetParameters service is unavailable!")
-            raise RuntimeError("GetParameters service is unavailable!")
-        
-        future = self.params_cli.call_async(get_parameters_req)
-        future.add_done_callback(done_callback)
-        # Wait for action to be done
-        event.wait()
-        return future.result()
+        future = client.call_async(GetParameters.Request(names=param_names))
+        self._wait_for_future(future)
+        self._reset_params = self._parse_parameters(param_names, future.result())
+        self.get_logger().info(f'Parameters retrieved')
 
-    def create_parameters_dictionary(self, names, response):
-        """
-        Creates a dictionary of parameter names and values from the service response.
-
-        Args:
-            names: List of parameter names.
-            response: The response object containing parameter values.
-
-        Returns:
-            A dictionary mapping parameter names to their values.
-        """
+    def _parse_parameters(self, names, response) -> dict:
+        """ Convert parameters to dictionary """
         result = {}
         for name, value in zip(names, response.values):
             if value.type == 1:  # PARAMETER_BOOL
@@ -146,206 +129,202 @@ class ResetEnvironmentService(Node):
             else:
                 result[name] = None  # Unknown type
         return result
+    
+    def _delete_existing_entity(self, request) -> None:
+        """ Delete existing entity """
+        req = DeleteEntity.Request()
+        req.name = f'{request.entity_namespace}_{request.entity_name}'
+        future = self.delete_entity_client.call_async(req)
+        self._wait_for_future(future)
+        if future.result().success:
+            self.get_logger().info(f'{future.result().status_message}')
+        else:
+            self.get_logger().error(f'{future.result().status_message}')
 
-    def find_process_pids(self, process_names, namespace):
-        """
-        Finds the PIDs of processes matching the specified names and namespace.
+    def _cleanup_processes(self, namespace) -> None:
+        """ Kill all processes in the entity namespace """
+        target_processes = ['cartographer', 'robot_spawner']
+        pids = self._find_processes(target_processes, namespace)
+        self._terminate_processes(pids)
+        self.get_logger().info(f'Processes terminated')
 
-        Args:
-            process_names: List of process names to find.
-            namespace: Namespace to filter processes.
-
-        Returns:
-            A list of matching process PIDs.
-        """
+    def _find_processes(self, target_processes, namespace) -> list:
+        """ Find all processes in the entity namespace """
         pids = []
-        for name in process_names:
+        for proc in target_processes:
             try:
-                # Use pgrep to find PIDs of the specified processes
-                output = subprocess.check_output(['pgrep', '-f', f'{name}.*--ros-args.*__ns:=/{namespace}'])
-                pids.extend(map(int, output.decode().strip().split('\n')))
-                self.get_logger().info(f'[simulation_reset] Found: {name}, PID = {pids[-1]}')
+                result = subprocess.check_output(
+                    ['pgrep', '-f', f'{proc}.*--ros-args.*__ns:=/{namespace}']
+                )
+                pids.extend(map(int, result.decode().split()))
             except subprocess.CalledProcessError:
-                self.get_logger().error(f'[simulation_reset] No process found for {name}.')
+                self.get_logger().info(f'No {proc} process found in {namespace}')
         return pids
 
-    def kill_processes(self, pids):
-        """
-        Kills processes by their PIDs.
-
-        Args:
-            pids: List of process PIDs to kill.
-        """
+    def _terminate_processes(self, pids) -> None:
+        """ Terminate all processes """
         for pid in pids:
             try:
-                # Send SIGTERM to the process
                 os.kill(pid, signal.SIGTERM)
-                self.get_logger().info(f'[simulation_reset] Successfully sent SIGTERM to PID {pid}.')
-                # Wait for the process to terminate
-                time.sleep(0.5)  # Give it a moment to shut down
-
+                time.sleep(0.5)
             except OSError as e:
-                self.get_logger().error(f'[simulation_reset] Error killing process {pid}: {e}')
+                self.get_logger().error(f'Error terminating process {pid}: {e}')
 
-    def execute_command(self, command):
-        """
-        Executes a shell command in a subprocess.
 
-        Args:
-            command: List representing the command to execute.
-        """
-        try:
-            process = subprocess.Popen(command)
-            return process
-        except subprocess.CalledProcessError as e:
-            self.get_logger().error(f"Error while running the command: {e}")
+    def _spawn_new_entity(self, namespace) -> None:
+        """ Spawn new entity """
+        spawn_position = utils.get_random_pose(
+            self._reset_params['env_model_properties_path'],
+            self._reset_params['env_center']
+        )
 
-    def spawn_entity(self, namespace):
-        """
-        Spawns a robot entity in the simulation at a random initial pose.
-
-        Args:
-            namespace: Namespace of the entity to spawn.
-        """
-        # Get random available initial pose
-        robot_init_pose = utils.get_random_pose(self.params["env_model_properties_path"], self.params["env_center"])
-        
         command = [
             'ros2', 'run', self.package_name, 'robot_spawner',
             '--ros-args',
-            '-r', '__ns:=/' + namespace,
-            '-p', f'robot_name:={self.params["robot_name"]}',
-            '-p', f'robot_namespace:={self.params["robot_namespace"]}',
-            '-p', f'robot_urdf_path:={self.params["robot_urdf_path"]}',
-            '-p', f'x:={float(robot_init_pose[0])}',
-            '-p', f'y:={float(robot_init_pose[1])}',
+            '-r', f'__ns:=/{namespace}',
+            '-p', f'robot_name:={self._reset_params["robot_name"]}',
+            '-p', f'robot_namespace:={namespace}',
+            '-p', f'robot_urdf_path:={self._reset_params["robot_urdf_path"]}',
+            '-p', f'x:={float(spawn_position[0])}',
+            '-p', f'y:={float(spawn_position[1])}',
             '-p', f'z:={0.01}',
-            '-p', f'yaw:={float(robot_init_pose[2])}',
-            '-p', f'env_model_properties_path:={self.params["env_model_properties_path"]}',
-            '-p', f'env_center:={self.params["env_center"]}',
-            '-p', f'cartographer_config_path:={self.params["cartographer_config_path"]}',
-            '-p', f'cartographer_config_basename:={self.params["cartographer_config_basename"]}',
-            '-p', f'rviz_config_path:={self.params["rviz_config_path"]}',
+            '-p', f'yaw:={float(spawn_position[2])}',
+            '-p', f'env_model_properties_path:={self._reset_params["env_model_properties_path"]}',
+            '-p', f'env_center:={self._reset_params["env_center"]}',
+            '-p', f'cartographer_config_path:={self._reset_params["cartographer_config_path"]}',
+            '-p', f'cartographer_config_basename:={self._reset_params["cartographer_config_basename"]}',
+            '-p', f'rviz_config_path:={self._reset_params["rviz_config_path"]}',
         ]
-        self.execute_command(command)
+        self._execute_command(command)
+
+    def _restart_mapping_nodes(self, namespace) -> None:
+        """ Restart mapping nodes """
+        self._start_cartographer(namespace)
+        self._start_occupancy_grid(namespace)
+        self._init_sensor_subscription(namespace)
+        self.get_logger().info('Mapping nodes restarted')
 
 
-    def start_cartographer(self):
-        """
-        Starts the Cartographer SLAM process.
-        """
+
+    def _start_cartographer(self, namespace) -> None:
+        """Launch cartographer node with namespace configuration."""
         command = [
             'ros2', 'run', 'cartographer_ros', 'cartographer_node',
-            '-configuration_directory', self.params['cartographer_config_path'],
-            '-configuration_basename', self.params['cartographer_config_basename'],
+            '-configuration_directory', self._reset_params['cartographer_config_path'],
+            '-configuration_basename', self._reset_params['cartographer_config_basename'],
             '--ros-args',
-            '-r', f'__ns:=/{self.params["robot_namespace"]}',  # Namespace remapping
-            '-r', f'/tf:=/{self.params["robot_namespace"]}/tf',  # Remapping '/tf'
-            '-r', f'/tf_static:=/{self.params["robot_namespace"]}/tf_static',  # Remapping '/tf_static'
-            '-p', 'use_sim_time:=True',  # Parameters
+            '-r', f'__ns:=/{namespace}',
+            '-r', f'/tf:=/{namespace}/tf',
+            '-r', f'/tf_static:=/{namespace}/tf_static',
+            '-p', 'use_sim_time:=True'
         ]
-        self.execute_command(command)
- 
+        self._execute_command(command)
 
-    def start_occupancy_grid(self):
-        """
-        Starts the Cartographer occupancy grid node.
-        """
+
+    def _start_occupancy_grid(self, namespace) -> None:
+        """Launch occupancy grid node."""
         command = [
             'ros2', 'run', 'cartographer_ros', 'cartographer_occupancy_grid_node',
             '--ros-args',
-            '-r', f'__ns:=/{self.params["robot_namespace"]}',
+            '-r', f'__ns:=/{namespace}',
             '-p', 'use_sim_time:=True',
             '-p', 'resolution:=0.05',
             '-p', 'publish_period_sec:=1.0'
         ]
-        self.execute_command(command)
+        self._execute_command(command)
+
+
+    def _init_sensor_subscription(self, namespace) -> None:
+        """Initialize sensor data subscriptions."""
+        namespace = self._reset_params["robot_namespace"]
+        
+        self.tf_sub = self.create_subscription(
+            TFMessage,
+            f'/{namespace}/tf',
+            lambda msg: self._sensor_data.update(tf=msg),
+            10,
+        )
+        
+        self.map_sub = self.create_subscription(
+            OccupancyGrid,
+            f'/{namespace}/map',
+            lambda msg: self._sensor_data.update(map=msg),
+            10,
+        )
+        
+        self.scan_sub = self.create_subscription(
+            LaserScan,
+            f'/{namespace}/scan',
+            lambda msg: self._sensor_data.update(scan=msg),
+            10,
+        )
+
+    def _verify_model_is_spawned(self) -> None:
+        """Verify that the model has been spawned."""
+        model_name = f'{self._reset_params["robot_namespace"]}_{self._reset_params["robot_name"]}'
+        future = self.model_list_client.call_async(GetModelList.Request())
+        self._wait_for_future(future)
+        if model_name not in future.result().model_names:
+            self.get_logger().info(f"Waiting for {model_name} to spawn...")
+            self._verify_model_is_spawned()
+        else: 
+            self.get_logger().info(f"{model_name} spawned successfully")
 
 
 
-    def reset_environment_callback(self, request, response):
-        """
-        Callback function for the `reset_environment` service.
 
-        Args:
-            request: Request object containing details about the environment to reset.
-            response: Response object to indicate success or failure.
+    def _wait_for_service(self, client, service_name) -> None:
+        """Wait for service to be available."""
+        self.get_logger().info(f'Waiting for {service_name} service...')
+        while not client.wait_for_service(timeout_sec=0.01):
+            pass
+        self.get_logger().info(f'...{service_name} connected!')
 
-        Returns:
-            The response object indicating the success of the operation.
-        """
+
+    def _wait_for_future(self, future, timeout=10):
+        """Wait for future completion with timeout."""
+        start = time.time()
+        while not future.done():
+            if time.time() - start > timeout:
+                raise TimeoutError("Service call timed out")
+            time.sleep(0.1)
+
+
+    def _verify_sensor_ready(self) -> None:
+        """Confirm all sensor topics are active."""
+        self.get_logger().info("Verifying sensor readiness...")
+        while None in self._sensor_data.values():
+            time.sleep(0.1)
+        self.get_logger().info("All sensors operational")
+
+
+    def _execute_command(self, command) -> subprocess.Popen:
+        """Execute system command with error handling."""
         try:
-            # Create a client to retrieve parameters from the robot spawner
-            service_name = f'/{request.entity_namespace}/robot_spawner/get_parameters'
-            self.params_cli = self.create_client(
-                GetParameters,
-                service_name,
-                callback_group=self.callback_group
-            )
-            
-            self.get_logger().info(f'Connecting to {service_name} service...')
-            while not self.del_entity_cli.wait_for_service(timeout_sec=1.0):
-                self.get_logger().info(f'Connecting to {service_name} service...')
-            self.get_logger().info('...Connected!')
+            return subprocess.Popen(command)
+        except subprocess.CalledProcessError as e:
+            self.get_logger().error(f"Command execution failed: {str(e)}")
+            return None
 
-            # Retrieve parameters
-            params_names = [
-                "robot_name", "robot_namespace", "robot_urdf_path", "use_namespace", "env_model_properties_path", 
-                "env_center", "cartographer_config_path", "cartographer_config_basename", "rviz_config_path"
-            ]
-            get_parameters_response = self.send_get_parameters_request(params_names)
-            self.params = self.create_parameters_dictionary(params_names, get_parameters_response)
 
-            # Delete entity
-            delete_entity_response = self.send_delete_entity_request(request)
-            response.success = delete_entity_response.success
-            self.get_logger().info(f'{delete_entity_response.status_message}')
 
-            # Shutdown cartographer and robot spawner
-            pids = self.find_process_pids(['cartographer', 'robot_spawner'], namespace=request.entity_namespace)
-            self.kill_processes(pids)
 
-            # Spawn a new robot entity
-            self.spawn_entity(request.entity_namespace)
-
-            # Restart Cartographer
-            self.start_cartographer()
-
-            # Restart occupancy grid
-            self.start_occupancy_grid()
-
-            time.sleep(7)
-
-        except Exception as e:
-            self.get_logger().error(f"Error: {e}")
-            response.success = False
-
-        return response
 
 def main(args=None):
-    """
-    Main entry point for the ResetEnvironmentService Node.
-    Initializes and spins the node using a multithreaded executor, 
-    and handles graceful shutdown on Ctrl+C.
-    """
     rclpy.init(args=args)
-
-    # Create the ResetEnvironmentService node
-    reset_env = ResetEnvironmentService()
-
-    # Create the multi-threaded executor
+    reset_node = ResetEnvironment()
+    
     executor = MultiThreadedExecutor()
+    executor.add_node(reset_node)
 
     try:
-        # Spin the node with the executor
-        rclpy.spin(reset_env, executor)
+        executor.spin()
     except KeyboardInterrupt:
-        # Handle Ctrl+C gracefully
-        reset_env.get_logger().info('Shutting down the node...')
+        reset_node._logger_info("Shutting down...")
     finally:
-        # Make sure to shut down and clean up the node
-        executor.shutdown()
-        reset_env.destroy_node()
+        executor.remove_node(reset_node)
+        reset_node.destroy_node()
         rclpy.shutdown()
+
 if __name__ == '__main__':
     main()
