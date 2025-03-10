@@ -53,5 +53,35 @@
 
    
 
+                <model name="env_1_turtlebot3_world">
+      <include>
+        <name>turtlebot3_world</name>
+        <uri>model://turtlebot3_world</uri>
+        <pose>9.0 0.0 0.0 0.0 0.0 0.0</pose>
+      </include>
+    </model>
+
+   
+
+                <model name="env_2_turtlebot3_world">
+      <include>
+        <name>turtlebot3_world</name>
+        <uri>model://turtlebot3_world</uri>
+        <pose>9.0 8.0 0.0 0.0 0.0 0.0</pose>
+      </include>
+    </model>
+
+   
+
+                <model name="env_3_turtlebot3_world">
+      <include>
+        <name>turtlebot3_world</name>
+        <uri>model://turtlebot3_world</uri>
+        <pose>0.0 8.0 0.0 0.0 0.0 0.0</pose>
+      </include>
+    </model>
+
+   
+
     </world>
 </sdf>
