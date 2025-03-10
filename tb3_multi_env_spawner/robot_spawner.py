@@ -1,5 +1,3 @@
-
-
 """
 This script defines a ROS 2 node for spawning a robot in a Gazebo simulation environment. The RobotSpawner node:
 
@@ -13,7 +11,6 @@ Functions:
 - `modify_urdf_with_namespace(self)`: Modifies the URDF to add the correct namespace and remap certain plugins.
 - `add_namespace_and_remap(self, ros_element, plugin_name)`: Adds namespace and remapping to a specific plugin in the URDF.
 - `call_spawn_service(self)`: Calls the `/spawn_entity` service to spawn the robot in Gazebo.
-- `shutdown_callback(self, request, response)`: Handles the shutdown request by shutting down the node and cleaning up the ROS 2 communication.
 - `main(args=None)`: The entry point for the script, initializes the ROS 2 system, creates the robot spawner node, and spins until shutdown.
 """
 import xml.etree.ElementTree as ET
@@ -74,21 +71,7 @@ class RobotSpawner(Node):
         self.modify_urdf_with_namespace()
         self.call_spawn_service()
 
-        signal.signal(signal.SIGINT, self.shutdown_callback)
-        signal.signal(signal.SIGTERM, self.shutdown_callback)
 
-        self.is_shutting_down = False
-
-
-    def shutdown_callback(self, sig, frame):
-        """
-        Handle termination signals (SIGINT, SIGTERM) to perform cleanup and shut down gracefully.
-        """
-        if not self.is_shutting_down:
-            self.get_logger().info('Signal received. Shutting down...')
-            self.is_shutting_down = True
-            rclpy.shutdown()
-            sys.exit(0)
 
     def modify_urdf_with_namespace(self):
         """
@@ -101,20 +84,20 @@ class RobotSpawner(Node):
             root = tree.getroot()
 
             # Iterate over all 'plugin' elements in the URDF
-            for plugin in root.iter('plugin'):
-                plugin_type = plugin.attrib.get('name', '')  # Get the plugin name
-                ros_element = plugin.find('ros')  # Find the 'ros' element in the plugin
+            for plugin in root.iter("plugin"):
+                plugin_type = plugin.attrib.get("name", "")  # Get the plugin name
+                ros_element = plugin.find("ros")  # Find the 'ros' element in the plugin
 
                 # Add namespace and remapping for specific plugins (e.g., diff_drive, imu)
-                if 'turtlebot3_diff_drive' in plugin_type:
-                    self.add_namespace_and_remap(ros_element, 'diff_drive_plugin')
-                elif 'turtlebot3_imu' in plugin_type:
-                    self.add_namespace_and_remap(ros_element, 'imu_plugin')
-                elif 'turtlebot3_joint_state' in plugin_type:
-                    self.add_namespace_and_remap(ros_element, 'joint_state_plugin')
+                if "turtlebot3_diff_drive" in plugin_type:
+                    self.add_namespace_and_remap(ros_element, "diff_drive_plugin")
+                elif "turtlebot3_imu" in plugin_type:
+                    self.add_namespace_and_remap(ros_element, "imu_plugin")
+                elif "turtlebot3_joint_state" in plugin_type:
+                    self.add_namespace_and_remap(ros_element, "joint_state_plugin")
 
             # Convert the modified URDF back to a string
-            self.modified_urdf = ET.tostring(root, encoding='unicode')
+            self.modified_urdf = ET.tostring(root, encoding="unicode")
         except Exception as e:
             # Log an error if URDF modification fails
             self.get_logger().error(f"Failed to modify URDF: {e}")
@@ -128,7 +111,7 @@ class RobotSpawner(Node):
         # Add the namespace to the plugin's ros element
         namespace_tag = ET.SubElement(ros_element, 'namespace')
         namespace_tag.text = f'/{self.robot_namespace}'
-        
+
         # Add remapping for tf and tf_static
         remap_tf = ET.SubElement(ros_element, 'remapping')
         remap_tf.text = f'/tf:=/{self.robot_namespace}/tf'
@@ -147,7 +130,7 @@ class RobotSpawner(Node):
         request = SpawnEntity.Request()
         request.name = self.robot_name
         request.xml = self.modified_urdf
-        request.robot_namespace = self.robot_namespace if self.use_namespace else ''
+        request.robot_namespace = self.robot_namespace if self.use_namespace else ""
         request.initial_pose.position.x = self.position_x
         request.initial_pose.position.y = self.position_y
         request.initial_pose.position.z = self.position_z
@@ -161,7 +144,9 @@ class RobotSpawner(Node):
         if future.result() is not None:
             self.get_logger().info(f"Spawned robot `{self.robot_name}` successfully.")
         else:
-            self.get_logger().error(f"Failed to spawn robot `{self.robot_name}`: {future.exception()}")
+            self.get_logger().error(
+                f"Failed to spawn robot `{self.robot_name}`: {future.exception()}"
+            )
 
 
 def main(args=None):
@@ -179,10 +164,9 @@ def main(args=None):
     except:
         robot_spawner.get_logger().info('External shutdown detected.')
     finally:
-        if not robot_spawner.is_shutting_down:  # Ensure not already shut down by signal handler
-            robot_spawner.cleanup()
-            robot_spawner.destroy_node()
-            rclpy.shutdown()
+        robot_spawner.cleanup()
+        robot_spawner.destroy_node()
+        rclpy.shutdown()
 
 
 if __name__ == '__main__':
