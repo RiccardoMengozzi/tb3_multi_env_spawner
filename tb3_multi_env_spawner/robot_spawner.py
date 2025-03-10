@@ -50,11 +50,6 @@ class RobotSpawner(Node):
         self.declare_parameter('y', 0.0)  # Initial y position for the robot spawn
         self.declare_parameter('z', 0.0)  # Initial z position for the robot spawn
         self.declare_parameter('yaw', 0.0)  # Initial yaw (orientation) for the robot spawn
-        self.declare_parameter('env_model_properties_path', 'dummy_world.json')  # Path to environment properties
-        self.declare_parameter('cartographer_config_path', 'dummy_config.lua')  # Path to cartographer config
-        self.declare_parameter('cartographer_config_basename', 'dummy_config.lua')  # Cartographer config basename
-        self.declare_parameter('env_center', [0, 0])  # Center of the environment in the world
-        self.declare_parameter('rviz_config_path', 'dummy_config.rviz')  # Path to RViz configuration
 
         # Retrieve the parameter values after declaration
         self.robot_urdf = self.get_parameter('robot_urdf_path').get_parameter_value().string_value
@@ -65,7 +60,6 @@ class RobotSpawner(Node):
         self.position_y = self.get_parameter('y').get_parameter_value().double_value
         self.position_z = self.get_parameter('z').get_parameter_value().double_value
         self.yaw = self.get_parameter('yaw').get_parameter_value().double_value
-        self.env_center = self.get_parameter('env_center').get_parameter_value().double_array_value
 
         # Modify robot name to include namespace if required
         self.robot_name = f'{self.robot_namespace}_{self.robot_name}' if self.use_namespace else self.robot_name
