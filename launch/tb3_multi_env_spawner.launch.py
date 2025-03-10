@@ -180,12 +180,6 @@ def generate_launch_description():
         }.items()
     )
 
-    # Reset environment service node
-    reset_env_cmd = Node(
-        package=package_name,
-        executable='reset_environment',
-        output='screen',
-    )
 
 
     # Generate environment centers
@@ -209,7 +203,6 @@ def generate_launch_description():
     launch_actions.extend([set_gazebo_models_path_cmd, 
                            declare_use_cartographer_cmd, 
                            gz_server_cmd, gz_client_cmd, 
-                           reset_env_cmd,
                            envs_properties_publisher_cmd])
 
 
@@ -246,6 +239,27 @@ def generate_launch_description():
             ],
         )   
 
+        # Reset environment service node
+        reset_env_cmd = Node(
+            package=package_name,
+            executable='reset_environment',
+            namespace=namespace,
+            output='screen',
+            parameters=[{
+                'robot_name': 'tb3',
+                'robot_namespace': namespace,
+                'robot_urdf_path': robot_urdf_path,
+                'env_center': env_center,
+                'env_model_properties_path': env_model_properties_path, 
+                'cartographer_config_path': os.path.join(get_package_share_directory('turtlebot3_cartographer'), 'config'),
+                'cartographer_config_basename': 'turtlebot3_lds_2d.lua',
+                'rviz_config_path': rviz_config_file,
+            }]
+        )
+
+
+
+
         # Robot spawner node
         robot_spawner_cmd = Node(
             package=package_name,
@@ -260,13 +274,6 @@ def generate_launch_description():
                 'y': float(robot_init_pose[1]),
                 'z': 0.01,
                 'yaw': float(robot_init_pose[2]),
-                'env_center': env_center,
-
-                # Parameters needed for reset_environment
-                'env_model_properties_path': env_model_properties_path, 
-                'cartographer_config_path': os.path.join(get_package_share_directory('turtlebot3_cartographer'), 'config'),
-                'cartographer_config_basename': 'turtlebot3_lds_2d.lua',
-                'rviz_config_path': rviz_config_file,
             }]
         )
 
@@ -326,9 +333,7 @@ def generate_launch_description():
 
 
 
-        # Add nodes to launch actions
-        launch_actions.extend([robot_state_pub_cmd, robot_spawner_cmd, cartographer_cmd, rviz_cmd, occupancy_grid_cmd])
-    
+        launch_actions.extend([robot_state_pub_cmd, reset_env_cmd, robot_spawner_cmd, cartographer_cmd, rviz_cmd, occupancy_grid_cmd])
 
 
     return LaunchDescription(launch_actions)
