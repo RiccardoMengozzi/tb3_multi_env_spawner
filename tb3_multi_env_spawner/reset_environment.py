@@ -4,6 +4,7 @@ import signal
 import subprocess
 import time
 import traceback
+import psutil
 from rclpy.node import Node
 from rclpy.executors import MultiThreadedExecutor
 from rclpy.callback_groups import ReentrantCallbackGroup, MutuallyExclusiveCallbackGroup
@@ -57,6 +58,7 @@ class ResetEnvironment(Node):
 
         self.delete_entity_client = self.create_client(DeleteEntity, '/delete_entity')
         self.model_list_client = self.create_client(GetModelList, '/get_model_list')
+        self.spawn_robot_client = self.create_client(Trigger, f'/{self.namespace}/spawn_robot')
 
         self.tf_sub = self.create_subscription(TFMessage, f'/{self.namespace}/tf', self._tf_callback, 10, callback_group=self.reent_cb_group)
         self.map_sub = self.create_subscription(OccupancyGrid, f'/{self.namespace}/map', self._map_callback, 10, callback_group=self.reent_cb_group)        
@@ -86,6 +88,7 @@ class ResetEnvironment(Node):
 
     def _wait_for_future(self, future) -> None:
         while not future.done():
+            self.get_logger().info('Waiting for future...')
             time.sleep(0.5) 
         
 
@@ -104,8 +107,10 @@ class ResetEnvironment(Node):
             raise
 
 
+
     def _reset_service_callback(self, request, response):
         try:
+            
             self.get_logger().info(f'Resetting environment {self.namespace}')
             self.cleanup_resources()
             self.tf_msg = None
@@ -118,7 +123,6 @@ class ResetEnvironment(Node):
             self._spawn_new_entity()  
             self._restart_mapping_nodes() 
             self._verify_sensor_ready() 
-            self._verify_model_is_spawned() 
 
             response.success = True
         except Exception as e:
@@ -154,7 +158,7 @@ class ResetEnvironment(Node):
 
     def _cleanup_processes(self) -> None:
         """ Kill all processes in the entity namespace """
-        target_processes = ['cartographer', 'robot_spawner']
+        target_processes = ['cartographer']
         pids = self._find_processes(target_processes)
         self._terminate_processes(pids)
         self.get_logger().info(f'Processes terminated')
@@ -183,25 +187,18 @@ class ResetEnvironment(Node):
 
     def _spawn_new_entity(self) -> None:
         """ Spawn new entity """
-        spawn_position = utils.get_random_pose(
-            self.env_model_properties_path,
-            self.env_center
-        )
+        self.get_logger().info(f'Spawning robot {self.robot_name} in {self.namespace}')
+        self._wait_for_service(self.spawn_robot_client, 'spawn_robot')
 
-        command = [
-            'ros2', 'run', self.package_name, 'robot_spawner',
-            '--ros-args',
-            '-r', f'__ns:=/{self.namespace}',
-            '-p', f'robot_name:={self.robot_name}',
-            '-p', f'robot_namespace:={self.namespace}',
-            '-p', f'robot_urdf_path:={self.robot_urdf}',
-            '-p', f'x:={float(spawn_position[0])}',
-            '-p', f'y:={float(spawn_position[1])}',
-            '-p', f'z:={0.01}',
-            '-p', f'yaw:={float(spawn_position[2])}',
-        ]
-        process = self._execute_command(command)
-
+        req = Trigger.Request()
+        future = self.spawn_robot_client.call_async(req)
+        self._wait_for_future(future)     
+        if future.result().success:
+            self.get_logger().info(future.result().message)
+            future.cancel()
+            del future
+        else:
+            raise Exception(future.result().message)
 
     def _restart_mapping_nodes(self) -> None:
         """ Restart mapping nodes """
@@ -246,28 +243,6 @@ class ResetEnvironment(Node):
             time.sleep(0.5)
         self.get_logger().info("All sensors operational")
 
-
-    def _verify_model_is_spawned(self) -> None:
-        """Verify that the model has been spawned using a loop"""
-        model_name = f'{self.namespace}_{self.robot_name}'
-        max_attempts = 10
-        attempt = 0
-        
-        while attempt < max_attempts:
-            future = self.model_list_client.call_async(GetModelList.Request())
-            self._wait_for_future(future)
-            
-            if model_name in future.result().model_names:
-                self.get_logger().info(f"{model_name} spawned successfully")
-                future.cancel()
-                del future
-                return
-            else:
-                self.get_logger().info(f"Model {model_name} not found, retrying...")
-                time.sleep(1)
-                attempt += 1
-        
-        raise Exception(f"Failed to spawn model {model_name} after {max_attempts} attempts")
 
 
 
