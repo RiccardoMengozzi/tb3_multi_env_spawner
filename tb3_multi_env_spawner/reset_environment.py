@@ -41,6 +41,8 @@ class ResetEnvironment(Node):
         self.declare_parameter('cartographer_config_basename', 'dummy_config.lua')  # Cartographer config basename
         self.declare_parameter('env_center', [0, 0])  # Center of the environment in the world
         self.declare_parameter('rviz_config_path', 'dummy_config.rviz')  # Path to RViz configuration
+        self.declare_parameter('map_resolution', 0.05)  # Resolution of the occupancy grid
+        self.declare_parameter('map_publish_period', 1.0)  # Publish period of the occupancy grid
 
         # Retrieve the parameter values after declaration
         self.robot_urdf = self.get_parameter('robot_urdf_path').get_parameter_value().string_value
@@ -51,6 +53,8 @@ class ResetEnvironment(Node):
         self.cartographer_config_basename = self.get_parameter('cartographer_config_basename').get_parameter_value().string_value
         self.env_center = self.get_parameter('env_center').get_parameter_value().integer_array_value
         self.rviz_config_path = self.get_parameter('rviz_config_path').get_parameter_value().string_value
+        self.map_resolution = self.get_parameter('map_resolution').get_parameter_value().double_value
+        self.map_publish_period = self.get_parameter('map_publish_period').get_parameter_value().double_value
 
         self.mutex_cb_group = MutuallyExclusiveCallbackGroup()
         self.reent_cb_group = ReentrantCallbackGroup()
@@ -88,7 +92,7 @@ class ResetEnvironment(Node):
 
     def _wait_for_future(self, future) -> None:
         while not future.done():
-            self.get_logger().info('Waiting for future...')
+            # self.get_logger().info('Waiting for future...')
             time.sleep(0.5) 
         
 
@@ -180,10 +184,17 @@ class ResetEnvironment(Node):
         """ Terminate all processes """
         for pid in pids:
             try:
-                os.kill(pid, signal.SIGTERM)
-                time.sleep(0.5)
-            except OSError as e:
-                self.get_logger().error(f'Error terminating process {pid}: {e}')
+                process = psutil.Process(pid)
+                children = process.children(recursive=True)
+                
+                # Send SIGKILL to entire process tree
+                for child in children:
+                    child.send_signal(signal.SIGKILL)
+                process.send_signal(signal.SIGKILL)
+                
+            except psutil.NoSuchProcess:
+                continue
+
 
     def _spawn_new_entity(self) -> None:
         """ Spawn new entity """
@@ -226,11 +237,11 @@ class ResetEnvironment(Node):
         """Launch occupancy grid node."""
         command = [
             'ros2', 'run', 'cartographer_ros', 'cartographer_occupancy_grid_node',
+            '-resolution', str(self.map_resolution),
+            '-publish_period_sec', str(self.map_publish_period),
             '--ros-args',
             '-r', f'__ns:=/{self.namespace}',
             '-p', 'use_sim_time:=True',
-            '-p', 'resolution:=0.05',
-            '-p', 'publish_period_sec:=1.0'
         ]
         process = self._execute_command(command)
 

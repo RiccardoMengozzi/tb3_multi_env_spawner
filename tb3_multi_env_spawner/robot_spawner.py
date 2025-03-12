@@ -180,7 +180,7 @@ class RobotSpawner(Node):
                     f"Waiting for service to spawn robot `{self.robot_name}`..."
                 )
                 time.sleep(0.5)
-
+            
         # Log the result of the spawn service
         if future.result() is not None:
             self.get_logger().info(f"Spawned robot `{self.robot_name}` successfully.")

@@ -26,6 +26,7 @@ setup(
             'robot_spawner = tb3_multi_env_spawner.robot_spawner:main',
             'reset_environment = tb3_multi_env_spawner.reset_environment:main',
             'envs_properties_publisher = tb3_multi_env_spawner.envs_properties_publisher:main',
+            'reset_gazebo = tb3_multi_env_spawner.reset_gazebo:main',
         ],
     },
 )

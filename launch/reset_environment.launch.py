@@ -8,6 +8,7 @@ from tb3_multi_env_spawner import utils
 from launch import LaunchDescription
 from ament_index_python.packages import get_package_share_directory
 from launch_ros.actions import Node
+from launch.actions import SetEnvironmentVariable
 
 
 def load_yaml(file_path):
@@ -36,6 +37,12 @@ def generate_launch_description():
     workspace_dir = Path(get_package_share_directory(package_name)).resolve().parents[3]
 
     # Paths to directories and files
+    world_path = os.path.join(workspace_dir, "src", package_name, "worlds")
+    models_properties_dir = os.path.join(
+        workspace_dir, "src", package_name, "extras", "models_properties"
+    )
+
+    # Paths to directories and files
     models_properties_dir = os.path.join(
         workspace_dir, "src", package_name, "extras", "models_properties"
     )
@@ -51,6 +58,7 @@ def generate_launch_description():
     # Extract parameters from the YAML file
     gui = params["gazebo"]["gui"]
     verbose = params["launch"]["verbose"]
+    gz_verbose = params["gazebo"]["verbose"]
     num_envs = params["env"]["num_envs"]
     mode = params["env"]["mode"]
     env_available_models = params["env"]["available_models"]
@@ -60,6 +68,8 @@ def generate_launch_description():
     robot_pos_x = params["robot"]["pose"]["x"]
     robot_pos_y = params["robot"]["pose"]["y"]
     robot_pos_yaw = params["robot"]["pose"]["yaw"]
+    map_resolution = params["cartographer"]["map_resolution"]
+    map_publish_period = params["cartographer"]["map_publish_period"]
 
     # Log launch parameters if verbose mode is enabled
     if verbose:
@@ -108,6 +118,12 @@ def generate_launch_description():
     if mode == "single_model":
         env_models = [env_model for _ in range(num_envs)]
 
+    # Create the world file dynamically
+    world_name = utils.create_multi_env_world(
+        num_envs, env_models, package_name, mode=mode
+    )
+    world_path = os.path.join(world_path, world_name)
+
     # Load robot URDF and SDF files
     TURTLEBOT3_MODEL = os.environ["TURTLEBOT3_MODEL"]
 
@@ -122,10 +138,50 @@ def generate_launch_description():
     # Launch actions list
     launch_actions = []
 
+
+    existing_gazebo_models_paths = os.environ.get("GAZEBO_MODEL_PATH", "")
+    new_gazebo_models_paths = (
+        f"{workspace_dir}/src/{package_name}/models/aws_models:"
+        f"{workspace_dir}/src/{package_name}/models/fuel_models:"
+        f"{workspace_dir}/src/{package_name}/models/turtlebot3_bighouse_model"
+    )
+
+    full_gazebo_models_paths = existing_gazebo_models_paths + new_gazebo_models_paths
+
+    # Set Gazebo model paths
+    set_gazebo_models_path_cmd = SetEnvironmentVariable(
+        name="GAZEBO_MODEL_PATH", value=full_gazebo_models_paths
+    )
+
+    launch_actions.extend([set_gazebo_models_path_cmd])
+
     # Generate environment centers
     envs_centers = utils.generate_centers(
         num_envs, env_models, models_properties_dir=models_properties_dir
     )
+
+    reset_gazebo_cmd = Node(
+        package=package_name,
+        executable="reset_gazebo",
+        output="screen",
+        parameters=[
+            {
+                "num_envs": num_envs,
+                "robot_name": "tb3",
+                "world_path": world_path,
+                "gui": gui,
+                "verbose": gz_verbose,
+                "cartographer_config_path": os.path.join(
+                    get_package_share_directory("turtlebot3_cartographer"), "config"
+                ),
+                "cartographer_config_basename": "turtlebot3_lds_2d.lua",
+                "map_resolution": map_resolution,
+                "map_publish_period": map_publish_period
+            }
+        ],
+    )
+
+    launch_actions.extend([reset_gazebo_cmd])
 
     # Create and configure nodes for each environment
     for i in range(num_envs):
@@ -155,6 +211,8 @@ def generate_launch_description():
                     ),
                     "cartographer_config_basename": "turtlebot3_lds_2d.lua",
                     "rviz_config_path": rviz_config_file,
+                    "map_resolution": map_resolution,
+                    "map_publish_period": map_publish_period
                 }
             ],
         )
